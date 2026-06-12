@@ -112,6 +112,7 @@ Copy-Item -Path (Join-Path $ScriptDir "THIRD_PARTY_NOTICES.md") -Destination (Jo
 if (Test-Path (Join-Path $AppDir "LICENSE")) {
   Copy-Item -Path (Join-Path $AppDir "LICENSE") -Destination (Join-Path $BundleRoot "LICENSE") -Force
 }
+Set-Content -Path (Join-Path $BundleRoot "portable-version.txt") -Value $Version -Encoding ASCII
 Remove-LocalArtifacts -Root $AppDir
 
 $EmbedZipPath = Join-Path $CacheDir $PythonEmbedZip

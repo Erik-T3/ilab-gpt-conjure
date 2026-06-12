@@ -116,6 +116,7 @@ class WebUIStaticI18nTests(WebUIStaticTestCase):
             "apiSettings.modeImagesShort",
             "imageInput.uploadBadge",
             "imageInput.addToGalleryShort",
+            "imageInput.removeImage",
             "imageInput.editedBadge",
             "output.pixelPreviewValue",
             "batch.selectedCount",
@@ -198,6 +199,7 @@ class WebUIStaticI18nTests(WebUIStaticTestCase):
         self.assertIn('translate("settings.status")', runtime_sources["storage"])
         self.assertIn('translate("imageInput.uploadBadge")', runtime_sources["image_strip"])
         self.assertIn('translate("imageInput.addToGalleryShort")', runtime_sources["image_strip"])
+        self.assertIn('translate("imageInput.removeImage")', runtime_sources["image_strip"])
         self.assertIn('formatTranslation("output.pixelPreviewValue"', runtime_sources["custom_size"])
         self.assertIn('formatTranslation("batch.selectedCount"', runtime_sources["batch"])
         self.assertIn('translate(mode === "edit" ? "prompt.runEdit" : "prompt.run")', runtime_sources["form"])

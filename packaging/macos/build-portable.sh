@@ -184,6 +184,7 @@ cp "${SCRIPT_DIR}/THIRD_PARTY_NOTICES.md" "${BUNDLE_ROOT}/THIRD_PARTY_NOTICES.md
 if [[ -f "${APP_DIR}/LICENSE" ]]; then
   cp "${APP_DIR}/LICENSE" "${BUNDLE_ROOT}/LICENSE"
 fi
+printf "%s\n" "$VERSION" > "${BUNDLE_ROOT}/portable-version.txt"
 chmod +x "${BUNDLE_ROOT}/Start WebUI Portable.command"
 chmod +x "${BUNDLE_ROOT}/Update WebUI Portable.command"
 remove_local_artifacts "$APP_DIR"

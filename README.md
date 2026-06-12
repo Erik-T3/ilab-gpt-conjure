@@ -117,7 +117,7 @@ http://127.0.0.1:8787/
 ## 免安装一键包
 
 当前可用的一键包见 [下载 / Releases](RELEASES.md)，也可以直接打开
-[GitHub Release v0.3.3](https://github.com/kadevin/ilab-gpt-conjure/releases/tag/v0.3.3)。
+[GitHub Release v0.3.4](https://github.com/kadevin/ilab-gpt-conjure/releases/tag/v0.3.4)。
 
 这些包面向希望像 ComfyUI 一样“解压即用”的用户：
 
@@ -131,10 +131,11 @@ http://127.0.0.1:8787/
 本地 `data/` 目录。设置、公用图库、输入图、输出图、任务数据库和日志都会写入
 `data/`。
 
+启动脚本会短暂检测最新 GitHub Release；发现新版本时只显示提醒，不会自动更新。
 更新已经解压的一键包时，先关闭 WebUI 服务窗口，然后运行 Windows 的
 `Update WebUI Portable.bat` 或 macOS 的 `Update WebUI Portable.command`。
-更新脚本会下载当前平台对应的最新 GitHub Release 资产，校验 SHA256，保留
-`data/`，并把被替换文件备份到 `.backup/`。
+更新脚本会下载当前平台对应的最新 GitHub Release 资产，校验 SHA256，保留本地 `data/`，并把被替换文件备份到 `.backup/`。如果不希望启动时检查版本，可在启动前设置
+`ILAB_SKIP_VERSION_CHECK=1`。
 
 Apple Silicon Mac 下载 `macos_portable_arm64`，Intel Mac 下载
 `macos_portable_x64`。

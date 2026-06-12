@@ -15,6 +15,11 @@ without installing Python separately.
 5. Configure an OpenAI-compatible API provider in the WebUI before generating
    images, unless you intentionally use the advanced local OAuth mode.
 
+On startup, the launcher may briefly check the latest GitHub Release. If a newer
+version is available, it only prints a reminder to close WebUI and run
+`Update WebUI Portable.command`; it never updates automatically. Set
+`ILAB_SKIP_VERSION_CHECK=1` before launching to skip this check.
+
 This is an unsigned portable zip. It is not a signed `.app`, not notarized, and
 does not require an Apple Developer account to build. The launcher tries to
 remove quarantine attributes from its own extracted folder before starting the

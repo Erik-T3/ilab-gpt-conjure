@@ -12,6 +12,11 @@ WebUI without installing Python separately.
 4. Configure an OpenAI-compatible API provider in the WebUI before generating
    images, unless you intentionally use the advanced local OAuth mode.
 
+On startup, the launcher may briefly check the latest GitHub Release. If a newer
+version is available, it only prints a reminder to close WebUI and run
+`Update WebUI Portable.bat`; it never updates automatically. Set
+`ILAB_SKIP_VERSION_CHECK=1` before launching to skip this check.
+
 ## Directory layout
 
 - `Start WebUI Portable.bat`: one-click WebUI launcher.

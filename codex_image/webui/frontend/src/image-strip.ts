@@ -31,6 +31,14 @@ function createThumbAddIcon() {
   return icon;
 }
 
+function createThumbRemoveIcon() {
+  const icon = document.createElement("span");
+  icon.className = "thumb-remove-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.innerHTML = '<svg viewBox="0 0 16 16" fill="none" focusable="false" xmlns="http://www.w3.org/2000/svg"><path d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>';
+  return icon;
+}
+
 function imageStripNeedsCompactGrid() {
   const state = getState();
   const els = getEls();
@@ -130,7 +138,9 @@ function renderImageStrip() {
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "thumb-remove";
-    remove.textContent = "×";
+    remove.setAttribute("aria-label", translate("imageInput.removeImage"));
+    remove.title = translate("imageInput.removeImage");
+    remove.append(createThumbRemoveIcon());
     remove.addEventListener("click", (event) => {
       event.stopPropagation();
       const removedSource = state.images[index];

@@ -28,6 +28,12 @@ function uploadSource(file: File) {
   };
 }
 
+function isImageFile(file: any) {
+  if (!file) return false;
+  if (String(file.type || "").startsWith("image/")) return true;
+  return /\.(avif|bmp|gif|heic|heif|jpe?g|png|tiff?|webp)$/i.test(String(file.name || ""));
+}
+
 function gallerySource(item: any) {
   return {
     kind: "gallery",
@@ -154,7 +160,7 @@ function uploadInputs() {
 
 function addImageFiles(files: any, options: any = {}) {
   const state = getState();
-  const imageFiles = Array.from(files || []).filter((file: any) => file?.type?.startsWith("image/")) as File[];
+  const imageFiles = Array.from(files || []).filter(isImageFile) as File[];
   if (!imageFiles.length) {
     if (options.emptyMessage) setStatus(options.emptyMessage, "error");
     return false;
@@ -222,6 +228,69 @@ function handleImagePaste(event: ClipboardEvent) {
   event.preventDefault();
   addImageFiles(files, {
     successMessage: (count: number) => formatTranslation("inputSource.pastedCount", { count }),
+  });
+}
+
+function imageFilesFromDataTransfer(dataTransfer: any) {
+  const files = Array.from(dataTransfer?.files || []).filter(isImageFile) as File[];
+  if (files.length) return files;
+  return Array.from(dataTransfer?.items || [])
+    .filter((item: any) => item?.kind === "file" && (!item.type || item.type.startsWith("image/")))
+    .map((item: any) => item.getAsFile?.())
+    .filter(isImageFile) as File[];
+}
+
+function dataTransferHasFile(dataTransfer: any) {
+  if (!dataTransfer) return false;
+  if (Array.from(dataTransfer.types || []).includes("Files")) return true;
+  if (Array.from(dataTransfer.files || []).length > 0) return true;
+  return Array.from(dataTransfer.items || []).some((item: any) => item?.kind === "file");
+}
+
+function dataTransferHasImageFile(dataTransfer: any) {
+  const files = Array.from(dataTransfer?.files || []);
+  if (files.some(isImageFile)) return true;
+  return Array.from(dataTransfer?.items || []).some((item: any) => (
+    item?.kind === "file" && (!item.type || item.type.startsWith("image/"))
+  ));
+}
+
+function setImageDropActive(active: boolean) {
+  getEls().imageUploaderGrid?.classList.toggle("drag-over", active);
+}
+
+function handleImageDragEnter(event: DragEvent) {
+  if (!dataTransferHasFile(event.dataTransfer)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  setImageDropActive(dataTransferHasImageFile(event.dataTransfer));
+}
+
+function handleImageDragOver(event: DragEvent) {
+  if (!dataTransferHasFile(event.dataTransfer)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const acceptsImage = dataTransferHasImageFile(event.dataTransfer);
+  if (event.dataTransfer) event.dataTransfer.dropEffect = acceptsImage ? "copy" : "none";
+  setImageDropActive(acceptsImage);
+}
+
+function handleImageDragLeave(event: DragEvent) {
+  const target = event.currentTarget as HTMLElement | null;
+  const related = event.relatedTarget as Node | null;
+  if (target && related && target.contains(related)) return;
+  setImageDropActive(false);
+}
+
+function handleImageDrop(event: DragEvent) {
+  if (!dataTransferHasFile(event.dataTransfer)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  setImageDropActive(false);
+  const files = imageFilesFromDataTransfer(event.dataTransfer);
+  addImageFiles(files, {
+    emptyMessage: translate("inputSource.dropImagesOnly"),
+    successMessage: (count: number) => formatTranslation("inputSource.droppedCount", { count }),
   });
 }
 
@@ -440,6 +509,10 @@ function bindInputSourceEvents() {
   const els = getEls();
   els.pasteClipboardButton?.addEventListener("click", pasteClipboardImages);
   document.addEventListener("paste", handleImagePaste);
+  els.imageUploaderGrid?.addEventListener("dragenter", handleImageDragEnter);
+  els.imageUploaderGrid?.addEventListener("dragover", handleImageDragOver);
+  els.imageUploaderGrid?.addEventListener("dragleave", handleImageDragLeave);
+  els.imageUploaderGrid?.addEventListener("drop", handleImageDrop);
 }
 
 export function initInputSourcesFeature() {
@@ -462,6 +535,7 @@ export function initInputSourcesFeature() {
     uploadInputs,
     addImageFiles,
     handleImagePaste,
+    handleImageDrop,
     pasteClipboardImages,
     missingGalleryInputs,
     missingReferenceAssetInputs,

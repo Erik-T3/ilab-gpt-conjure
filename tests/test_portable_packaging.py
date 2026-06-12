@@ -36,6 +36,7 @@ class PortablePackagingTests(unittest.TestCase):
         self.assertIn("Update WebUI Portable.bat", build_text)
         self.assertIn("Update WebUI Portable.ps1", build_text)
         self.assertIn("THIRD_PARTY_NOTICES.md", build_text)
+        self.assertIn("portable-version.txt", build_text)
         self.assertIn("Invoke-WebRequest", build_text)
         self.assertIn("Compress-Archive", build_text)
         self.assertIn("codex_image", build_text)
@@ -50,6 +51,12 @@ class PortablePackagingTests(unittest.TestCase):
         self.assertIn("portable_webui_app:app", launcher_text)
         self.assertIn("api/health", launcher_text)
         self.assertIn("data", launcher_text)
+        self.assertIn("portable-version.txt", launcher_text)
+        self.assertIn("LATEST_RELEASE_URL", launcher_text)
+        self.assertIn("ILAB_SKIP_VERSION_CHECK", launcher_text)
+        self.assertIn("Invoke-RestMethod", launcher_text)
+        self.assertIn("ilab-gpt-conjure-portable-launcher", launcher_text)
+        self.assertIn("Update WebUI Portable.bat", launcher_text)
 
         updater_text = updater.read_text(encoding="utf-8")
         updater_helper_text = updater_helper.read_text(encoding="utf-8")
@@ -68,6 +75,9 @@ class PortablePackagingTests(unittest.TestCase):
         self.assertIn("Do not put API keys", readme_text)
         self.assertIn("OpenAI-compatible API", readme_text)
         self.assertIn("Update WebUI Portable.bat", readme_text)
+        self.assertIn("latest GitHub Release", readme_text)
+        self.assertIn("it never updates automatically", readme_text)
+        self.assertIn("ILAB_SKIP_VERSION_CHECK=1", readme_text)
 
     def test_macos_portable_packaging_files_define_arch_specific_bundles(self) -> None:
         build_script = Path("packaging/macos/build-portable.sh")
@@ -96,6 +106,7 @@ class PortablePackagingTests(unittest.TestCase):
         self.assertIn("Start WebUI Portable.command", build_text)
         self.assertIn("Update WebUI Portable.command", build_text)
         self.assertIn("THIRD_PARTY_NOTICES.md", build_text)
+        self.assertIn("portable-version.txt", build_text)
         self.assertIn("ditto -c -k", build_text)
         self.assertIn("portable_webui_app", build_text)
 
@@ -116,6 +127,13 @@ class PortablePackagingTests(unittest.TestCase):
         self.assertIn("portable_webui_app:app", launcher_text)
         self.assertIn("api/health", launcher_text)
         self.assertIn("data", launcher_text)
+        self.assertIn("portable-version.txt", launcher_text)
+        self.assertIn("LATEST_RELEASE_URL", launcher_text)
+        self.assertIn("check_latest_release_notice", launcher_text)
+        self.assertIn("--max-time 2", launcher_text)
+        self.assertIn("ILAB_SKIP_VERSION_CHECK", launcher_text)
+        self.assertIn("ilab-gpt-conjure-portable-launcher", launcher_text)
+        self.assertIn("Update WebUI Portable.command", launcher_text)
 
         updater_text = updater.read_text(encoding="utf-8")
         self.assertIn("https://api.github.com/repos/kadevin/ilab-gpt-conjure/releases/latest", updater_text)
@@ -141,6 +159,9 @@ class PortablePackagingTests(unittest.TestCase):
         self.assertIn("xattr -dr com.apple.quarantine", readme_text)
         self.assertIn("OpenAI-compatible API", readme_text)
         self.assertIn("Update WebUI Portable.command", readme_text)
+        self.assertIn("latest GitHub Release", readme_text)
+        self.assertIn("it never updates automatically", readme_text)
+        self.assertIn("ILAB_SKIP_VERSION_CHECK=1", readme_text)
 
     def test_root_launchers_initialize_auth_settings(self) -> None:
         mac_launcher = Path("Start WebUI.command")

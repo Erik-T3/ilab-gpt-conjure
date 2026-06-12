@@ -135,8 +135,8 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         script = self._frontend_script_source()
         styles = Path("codex_image/webui/static/styles.css").read_text(encoding="utf-8")
 
-        self.assertIn('/static/app.js?v=runtime-287', html)
-        self.assertIn('/static/styles.css?v=runtime-287', html)
+        self.assertIn('/static/app.js?v=runtime-290', html)
+        self.assertIn('/static/styles.css?v=runtime-290', html)
         self.assertIn('id="recentAssetDock"', html)
         self.assertRegex(html, r'class="image-input-footer"[\s\S]*id="recentAssetDock"[\s\S]*id="recentAssetList"')
         self.assertRegex(html, r'id="recentAssetDock"[\s\S]*id="quickGalleryDock"[\s\S]*id="galleryManagePanel"')
@@ -195,6 +195,7 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         self.assertIn("export function initInputSourcesFeature", input_source)
         self.assertIn("function addImageFiles", input_source)
         self.assertIn("function handleImagePaste", input_source)
+        self.assertIn("function handleImageDrop", input_source)
         self.assertIn("function pasteClipboardImages", input_source)
         self.assertIn("function collectReferenceOutput", input_source)
         self.assertIn("Object.assign(getLegacyBridge().methods", input_source)
@@ -737,19 +738,23 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
             r"@media \(max-height:\s*1080px\) and \(min-width:\s*1024px\)\s*\{[\s\S]*\.dashboard-col\s*\{[^}]*gap:\s*12px",
         )
         self.assertIn(
-            ".controls-col {\n    height: calc(100dvh - var(--header-height) - 28px);\n    justify-content: flex-start;\n  }",
+            ".controls-col {\n    min-height: calc(100dvh - var(--header-height) - 28px);\n    height: auto;\n    justify-content: flex-start;\n  }",
             styles,
         )
         self.assertNotIn(
             ".controls-col {\n    justify-content: space-between;\n  }",
             styles,
         )
-        self.assertIn(
+        self.assertNotIn(
             ".controls-col .image-panel,\n  .controls-col .prompt-panel {\n    flex: 1 1 0;",
             styles,
         )
         self.assertIn(
-            ".controls-col .image-panel {\n    min-height: 194px;",
+            ".controls-col .image-panel {\n    flex: 0 0 auto;\n    min-height: 194px;",
+            styles,
+        )
+        self.assertIn(
+            ".controls-col .prompt-panel {\n    flex: 0 0 auto;\n    min-height: 148px;\n    overflow: hidden;",
             styles,
         )
         self.assertIn(
@@ -2535,9 +2540,10 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
     def test_image_input_accepts_clipboard_images(self) -> None:
         html = Path("codex_image/webui/static/index.html").read_text(encoding="utf-8")
         script = self._frontend_script_source()
+        styles = Path("codex_image/webui/static/styles.css").read_text(encoding="utf-8")
 
-        self.assertIn('/static/app.js?v=runtime-287', html)
-        self.assertIn('/static/styles.css?v=runtime-287', html)
+        self.assertIn('/static/app.js?v=runtime-290', html)
+        self.assertIn('/static/styles.css?v=runtime-290', html)
         self.assertIn('id="pasteClipboardButton"', html)
         self.assertIn('id="statusText"', html)
         self.assertRegex(
@@ -2553,9 +2559,23 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         self.assertIn("pasteClipboardButton: document.querySelector(\"#pasteClipboardButton\")", script)
         self.assertIn('els.pasteClipboardButton?.addEventListener("click", pasteClipboardImages)', script)
         self.assertIn('document.addEventListener("paste", handleImagePaste)', script)
+        self.assertIn('els.imageUploaderGrid?.addEventListener("dragenter", handleImageDragEnter)', script)
+        self.assertIn('els.imageUploaderGrid?.addEventListener("dragover", handleImageDragOver)', script)
+        self.assertIn('els.imageUploaderGrid?.addEventListener("dragleave", handleImageDragLeave)', script)
+        self.assertIn('els.imageUploaderGrid?.addEventListener("drop", handleImageDrop)', script)
+        self.assertIn("function isImageFile(file)", script)
         self.assertIn("function addImageFiles(files, options = {})", script)
         self.assertIn("function handleImagePaste(event)", script)
         self.assertIn("event.clipboardData?.items", script)
+        self.assertIn("function imageFilesFromDataTransfer(dataTransfer)", script)
+        self.assertIn("function dataTransferHasFile(dataTransfer)", script)
+        self.assertRegex(script, r"function handleImageDragOver\(event(?:: DragEvent)?\)")
+        self.assertIn("event.preventDefault()", script)
+        self.assertIn('event.dataTransfer.dropEffect = acceptsImage ? "copy" : "none"', script)
+        self.assertRegex(script, r"function handleImageDrop\(event(?:: DragEvent)?\)")
+        self.assertIn("event.dataTransfer", script)
+        self.assertIn("inputSource.droppedCount", script)
+        self.assertIn("inputSource.dropImagesOnly", script)
         self.assertIn("function pasteClipboardImages()", script)
         self.assertIn("navigator.clipboard?.read", script)
         self.assertIn("readClipboardImageFiles", script)
@@ -2564,6 +2584,7 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         self.assertIn("clipboardPasteShortcutLabel", script)
         self.assertIn("图片输入区已聚焦，请按", script)
         self.assertIn("clipboardImageFilename", script)
+        self.assertRegex(styles, r"\.image-uploader-grid\.drag-over\s+\.upload-tile\s*\{[^}]*background:")
     def test_image_thumbnails_keep_natural_aspect_ratio(self) -> None:
         styles = Path("codex_image/webui/static/styles.css").read_text(encoding="utf-8")
 
@@ -2624,11 +2645,17 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         self.assertNotRegex(styles, r"\.thumb-edited-badge\s*\{[^}]*bottom:\s*31px")
     def test_input_image_thumbnail_primary_click_opens_editor_and_gallery_action_is_secondary(self) -> None:
         script = self._frontend_script_source()
+        image_strip_source = self._image_strip_source()
         styles = Path("codex_image/webui/static/styles.css").read_text(encoding="utf-8")
 
-        self.assertIn("createThumbAddIcon", script)
-        self.assertIn("thumb-add-icon", script)
-        self.assertIn("stroke-linecap", script)
+        self.assertIn("createThumbAddIcon", image_strip_source)
+        self.assertIn("function createThumbRemoveIcon()", image_strip_source)
+        self.assertIn("thumb-add-icon", image_strip_source)
+        self.assertIn("thumb-remove-icon", image_strip_source)
+        self.assertIn("stroke-linecap", image_strip_source)
+        self.assertIn('remove.append(createThumbRemoveIcon())', image_strip_source)
+        self.assertIn('remove.setAttribute("aria-label", translate("imageInput.removeImage"))', image_strip_source)
+        self.assertNotIn('remove.textContent = "×"', image_strip_source)
         self.assertNotIn("createThumbActionIcon", script)
         self.assertNotIn('createThumbActionIcon("gallery")', script)
         self.assertNotIn('createThumbActionIcon("edit")', script)
@@ -2653,6 +2680,13 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         self.assertNotRegex(styles, r"\.add-upload-to-gallery\s*\{[^}]*top:\s*6px")
         self.assertRegex(styles, r"\.thumb:hover\s+\.add-upload-to-gallery,\s*\.thumb:focus-within\s+\.add-upload-to-gallery,\s*\.add-upload-to-gallery:focus-visible\s*\{[^}]*opacity:\s*1")
         self.assertRegex(styles, r"\.thumb \.thumb-remove\s*\{[^}]*z-index:\s*3")
+        self.assertRegex(styles, r"\.thumb \.thumb-remove\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--danger\) 78%, var\(--surface\)\)")
+        self.assertRegex(styles, r"\.thumb \.thumb-remove\s*\{[^}]*color:\s*var\(--primary-foreground\)")
+        self.assertNotRegex(styles, r"\.thumb \.thumb-remove\s*\{[^}]*background:\s*rgba\(0,\s*0,\s*0,\s*0\.5\)")
+        self.assertRegex(styles, r"\.thumb-remove-icon,\s*\.thumb-remove-icon svg\s*\{[^}]*width:\s*12px")
+        self.assertRegex(styles, r"\.thumb-badge\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--primary\) 88%, transparent\)")
+        self.assertRegex(styles, r"\.thumb-badge\s*\{[^}]*color:\s*var\(--primary-foreground\)")
+        self.assertNotRegex(styles, r"\.thumb-badge\s*\{[^}]*background:\s*rgba\(31,\s*53,\s*47")
         self.assertRegex(styles, r"\.thumb-add-icon\s+svg\s*\{[^}]*width:\s*14px")
         self.assertRegex(styles, r"\.upload-tile\s+\.icon\s+svg\s*\{[^}]*width:\s*18px")
         self.assertRegex(styles, r"\.upload-tile\s+\.icon\s+svg\s*\{[^}]*height:\s*18px")
@@ -2798,8 +2832,8 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         script = self._frontend_script_source()
         styles = Path("codex_image/webui/static/styles.css").read_text(encoding="utf-8")
 
-        self.assertIn("/static/app.js?v=runtime-287", html)
-        self.assertIn("/static/styles.css?v=runtime-287", html)
+        self.assertIn("/static/app.js?v=runtime-290", html)
+        self.assertIn("/static/styles.css?v=runtime-290", html)
         self.assertIn('const THEME_STORAGE_KEY = "codex-image-theme-preference";', script)
         self.assertIn('themePreference: "system"', script)
         self.assertIn('call(methods, "restoreThemePreference")', script)

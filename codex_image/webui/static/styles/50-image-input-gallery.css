@@ -60,6 +60,17 @@
   background: var(--primary-light);
 }
 
+.image-input-main:has(.image-uploader-grid.drag-over),
+.image-uploader-grid.drag-over {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary-light) 82%, var(--surface-soft));
+}
+
+.image-uploader-grid.drag-over .upload-tile {
+  color: var(--primary-strong);
+  background: color-mix(in srgb, var(--primary-light) 76%, var(--surface-soft));
+}
+
 .image-input-footer {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -377,15 +388,31 @@
   z-index: 3;
   width: 20px;
   height: 20px;
-  border: none;
+  border: 1px solid color-mix(in srgb, var(--danger) 36%, var(--surface));
   border-radius: 50%;
-  background: rgba(0,0,0,0.5);
-  color: white;
-  font-size: 12px;
+  background: color-mix(in srgb, var(--danger) 78%, var(--surface));
+  color: var(--primary-foreground);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  box-shadow: 0 6px 14px rgba(12, 28, 23, 0.16);
+  transition: background var(--motion-base), border-color var(--motion-base), transform var(--motion-base);
+}
+
+.thumb .thumb-remove:hover,
+.thumb .thumb-remove:focus-visible {
+  border-color: color-mix(in srgb, var(--danger) 72%, var(--surface));
+  background: var(--danger);
+  transform: translateY(-1px);
+}
+
+.thumb-remove-icon,
+.thumb-remove-icon svg {
+  display: block;
+  width: 12px;
+  height: 12px;
 }
 
 .thumb-badge,
@@ -402,9 +429,11 @@
   width: fit-content;
   padding: 2px 6px;
   border-radius: 999px;
-  background: rgba(31, 53, 47, 0.72);
-  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--primary-foreground) 22%, transparent);
+  background: color-mix(in srgb, var(--primary) 88%, transparent);
+  color: var(--primary-foreground);
   font-size: 10px;
+  box-shadow: 0 6px 14px rgba(12, 28, 23, 0.14);
 }
 
 .gallery-thumb {
@@ -584,7 +613,12 @@
   right: 2px;
   width: 16px;
   height: 16px;
-  font-size: 10px;
+}
+
+.image-uploader-grid.compact-grid .thumb-remove-icon,
+.image-uploader-grid.compact-grid .thumb-remove-icon svg {
+  width: 10px;
+  height: 10px;
 }
 
 .image-uploader-grid.compact-grid .add-upload-to-gallery {

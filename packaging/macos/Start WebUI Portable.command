@@ -71,9 +71,59 @@ if [ -f "$CERTIFI_CA_BUNDLE" ]; then
 fi
 LOG_FILE="${DATA_DIR}/logs/webui-server.log"
 AUTH_SETTINGS_PATH="${DATA_DIR}/webui-auth-settings.json"
+VERSION_FILE="${BUNDLE_DIR}/portable-version.txt"
+LATEST_RELEASE_URL="https://api.github.com/repos/kadevin/ilab-gpt-conjure/releases/latest"
 "$PYTHON_BIN" -m codex_image.webui.startup_auth --settings-path "$AUTH_SETTINGS_PATH" >/dev/null
 
 cd "$APP_DIR"
+
+check_latest_release_notice() {
+  if [ "${ILAB_SKIP_VERSION_CHECK:-}" = "1" ]; then
+    return 0
+  fi
+  if [ ! -f "$VERSION_FILE" ] || ! command -v curl >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local current_version
+  current_version="$(head -n 1 "$VERSION_FILE" | tr -d '[:space:]')"
+  if [ -z "$current_version" ]; then
+    return 0
+  fi
+
+  local release_json
+  release_json="$(curl -fsSL --connect-timeout 1 --max-time 2 \
+    -H "User-Agent: ilab-gpt-conjure-portable-launcher" \
+    "$LATEST_RELEASE_URL" 2>/dev/null)" || return 0
+
+  local latest_version
+  latest_version="$(printf "%s" "$release_json" | "$PYTHON_BIN" -c '
+import json
+import re
+import sys
+
+current = sys.argv[1].strip()
+try:
+    latest = str(json.load(sys.stdin).get("tag_name") or "").strip()
+except Exception:
+    raise SystemExit(0)
+
+def parse(value):
+    match = re.match(r"^[vV]?(\d+)\.(\d+)\.(\d+)", value.strip())
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+current_parts = parse(current)
+latest_parts = parse(latest)
+if current_parts and latest_parts and latest_parts > current_parts:
+    print(".".join(str(part) for part in latest_parts))
+' "$current_version" 2>/dev/null || true)"
+
+  if [ -n "$latest_version" ]; then
+    echo "New version available: v${latest_version}. Close WebUI and run \"Update WebUI Portable.command\" to update."
+  fi
+}
 
 webui_is_ready() {
   "$PYTHON_BIN" - "$HEALTH_URL" <<'PY' >/dev/null 2>&1
@@ -101,6 +151,7 @@ wait_for_webui() {
 echo "Starting iLab GPT Conjure at ${URL}"
 echo "Data directory: ${DATA_DIR}"
 echo "Writing server log to ${LOG_FILE}"
+check_latest_release_notice
 
 if webui_is_ready; then
   echo "WebUI is already running at ${URL}"

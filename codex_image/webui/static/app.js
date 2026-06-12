@@ -644,6 +644,7 @@
       "imageInput.uploadBadge": "\u4E0A\u4F20",
       "imageInput.addToGallery": "\u52A0\u5165\u56FE\u5E93",
       "imageInput.addToGalleryShort": "\u56FE\u5E93",
+      "imageInput.removeImage": "\u79FB\u9664\u56FE\u7247",
       "imageInput.editedBadge": "\u5DF2\u7F16\u8F91",
       "imageInput.editImage": "\u7F16\u8F91{name}",
       "imageInput.deletedRecent": "\u6700\u8FD1\u4E0A\u4F20\u5DF2\u5220\u9664",
@@ -660,6 +661,8 @@
       "inputSource.galleryFallback": "\u56FE\u5E93\u56FE\u7247",
       "inputSource.focusPasteFallback": "{prefix}\uFF0C\u56FE\u7247\u8F93\u5165\u533A\u5DF2\u805A\u7126\uFF0C\u8BF7\u6309 {shortcut} \u7C98\u8D34\u56FE\u7247",
       "inputSource.pastedCount": "\u5DF2\u7C98\u8D34 {count} \u5F20\u526A\u8D34\u677F\u56FE\u7247",
+      "inputSource.droppedCount": "\u5DF2\u6DFB\u52A0 {count} \u5F20\u62D6\u5165\u56FE\u7247",
+      "inputSource.dropImagesOnly": "\u53EA\u80FD\u62D6\u5165\u56FE\u7247\u6587\u4EF6",
       "inputSource.clipboardUnsupported": "\u5F53\u524D\u6D4F\u89C8\u5668\u4E0D\u652F\u6301\u76F4\u63A5\u8BFB\u53D6\u526A\u8D34\u677F",
       "inputSource.clipboardEmpty": "\u6CA1\u6709\u8BFB\u5230\u526A\u8D34\u677F\u56FE\u7247",
       "inputSource.clipboardDenied": "\u6D4F\u89C8\u5668\u62D2\u7EDD\u76F4\u63A5\u8BFB\u53D6\u526A\u8D34\u677F",
@@ -1404,6 +1407,7 @@
       "imageInput.uploadBadge": "Upload",
       "imageInput.addToGallery": "Add to gallery",
       "imageInput.addToGalleryShort": "Gallery",
+      "imageInput.removeImage": "Remove image",
       "imageInput.editedBadge": "Edited",
       "imageInput.editImage": "Edit {name}",
       "imageInput.deletedRecent": "Recent upload deleted",
@@ -1420,6 +1424,8 @@
       "inputSource.galleryFallback": "Gallery image",
       "inputSource.focusPasteFallback": "{prefix}. Image input is focused; press {shortcut} to paste images.",
       "inputSource.pastedCount": "Pasted {count} clipboard images",
+      "inputSource.droppedCount": "Added {count} dropped images",
+      "inputSource.dropImagesOnly": "Drop image files only",
       "inputSource.clipboardUnsupported": "This browser cannot read the clipboard directly",
       "inputSource.clipboardEmpty": "No clipboard images found",
       "inputSource.clipboardDenied": "The browser blocked direct clipboard access",
@@ -2605,6 +2611,11 @@
       edited: false
     };
   }
+  function isImageFile(file) {
+    if (!file) return false;
+    if (String(file.type || "").startsWith("image/")) return true;
+    return /\.(avif|bmp|gif|heic|heif|jpe?g|png|tiff?|webp)$/i.test(String(file.name || ""));
+  }
   function gallerySource(item) {
     return {
       kind: "gallery",
@@ -2715,7 +2726,7 @@
   }
   function addImageFiles(files, options = {}) {
     const state32 = getState();
-    const imageFiles = Array.from(files || []).filter((file) => file?.type?.startsWith("image/"));
+    const imageFiles = Array.from(files || []).filter(isImageFile);
     if (!imageFiles.length) {
       if (options.emptyMessage) setStatus2(options.emptyMessage, "error");
       return false;
@@ -2773,6 +2784,56 @@
     event.preventDefault();
     addImageFiles(files, {
       successMessage: (count) => formatTranslation("inputSource.pastedCount", { count })
+    });
+  }
+  function imageFilesFromDataTransfer(dataTransfer) {
+    const files = Array.from(dataTransfer?.files || []).filter(isImageFile);
+    if (files.length) return files;
+    return Array.from(dataTransfer?.items || []).filter((item) => item?.kind === "file" && (!item.type || item.type.startsWith("image/"))).map((item) => item.getAsFile?.()).filter(isImageFile);
+  }
+  function dataTransferHasFile(dataTransfer) {
+    if (!dataTransfer) return false;
+    if (Array.from(dataTransfer.types || []).includes("Files")) return true;
+    if (Array.from(dataTransfer.files || []).length > 0) return true;
+    return Array.from(dataTransfer.items || []).some((item) => item?.kind === "file");
+  }
+  function dataTransferHasImageFile(dataTransfer) {
+    const files = Array.from(dataTransfer?.files || []);
+    if (files.some(isImageFile)) return true;
+    return Array.from(dataTransfer?.items || []).some((item) => item?.kind === "file" && (!item.type || item.type.startsWith("image/")));
+  }
+  function setImageDropActive(active) {
+    getEls().imageUploaderGrid?.classList.toggle("drag-over", active);
+  }
+  function handleImageDragEnter(event) {
+    if (!dataTransferHasFile(event.dataTransfer)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setImageDropActive(dataTransferHasImageFile(event.dataTransfer));
+  }
+  function handleImageDragOver(event) {
+    if (!dataTransferHasFile(event.dataTransfer)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const acceptsImage = dataTransferHasImageFile(event.dataTransfer);
+    if (event.dataTransfer) event.dataTransfer.dropEffect = acceptsImage ? "copy" : "none";
+    setImageDropActive(acceptsImage);
+  }
+  function handleImageDragLeave(event) {
+    const target = event.currentTarget;
+    const related = event.relatedTarget;
+    if (target && related && target.contains(related)) return;
+    setImageDropActive(false);
+  }
+  function handleImageDrop(event) {
+    if (!dataTransferHasFile(event.dataTransfer)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setImageDropActive(false);
+    const files = imageFilesFromDataTransfer(event.dataTransfer);
+    addImageFiles(files, {
+      emptyMessage: translate("inputSource.dropImagesOnly"),
+      successMessage: (count) => formatTranslation("inputSource.droppedCount", { count })
     });
   }
   async function readClipboardImageFiles() {
@@ -2972,6 +3033,10 @@
     const els42 = getEls();
     els42.pasteClipboardButton?.addEventListener("click", pasteClipboardImages);
     document.addEventListener("paste", handleImagePaste);
+    els42.imageUploaderGrid?.addEventListener("dragenter", handleImageDragEnter);
+    els42.imageUploaderGrid?.addEventListener("dragover", handleImageDragOver);
+    els42.imageUploaderGrid?.addEventListener("dragleave", handleImageDragLeave);
+    els42.imageUploaderGrid?.addEventListener("drop", handleImageDrop);
   }
   function initInputSourcesFeature() {
     if (inputSourcesFeatureInitialized) return;
@@ -2993,6 +3058,7 @@
       uploadInputs,
       addImageFiles,
       handleImagePaste,
+      handleImageDrop,
       pasteClipboardImages,
       missingGalleryInputs,
       missingReferenceAssetInputs,
@@ -3788,6 +3854,13 @@ ${hint}` : hint;
     icon.innerHTML = '<svg viewBox="0 0 16 16" fill="none" focusable="false" xmlns="http://www.w3.org/2000/svg"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-linecap="round"/></svg>';
     return icon;
   }
+  function createThumbRemoveIcon() {
+    const icon = document.createElement("span");
+    icon.className = "thumb-remove-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = '<svg viewBox="0 0 16 16" fill="none" focusable="false" xmlns="http://www.w3.org/2000/svg"><path d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>';
+    return icon;
+  }
   function imageStripNeedsCompactGrid() {
     const state32 = getState();
     const els42 = getEls();
@@ -3876,7 +3949,9 @@ ${hint}` : hint;
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "thumb-remove";
-      remove.textContent = "\xD7";
+      remove.setAttribute("aria-label", translate("imageInput.removeImage"));
+      remove.title = translate("imageInput.removeImage");
+      remove.append(createThumbRemoveIcon());
       remove.addEventListener("click", (event) => {
         event.stopPropagation();
         const removedSource = state32.images[index];
