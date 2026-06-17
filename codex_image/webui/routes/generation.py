@@ -16,6 +16,7 @@ from codex_image.webui.executor import (
     _resolve_gallery_refs,
     _resolve_reference_assets,
 )
+from codex_image.webui.prompt_ratio import append_ratio_prompt_instruction
 from codex_image.webui.storage import utc_now
 from codex_image.webui.task_metadata import _dedupe_preserve_order, _params, _with_file_urls, _write_queued_metadata
 
@@ -66,7 +67,7 @@ def register_generation_routes(app: FastAPI, ctx: WebUIContext) -> None:
         all_reference_data_urls = reference_data_urls + gallery_data_urls
         compression = _normalize_compression(output_format, output_compression)
         fidelity = _normalize_prompt_fidelity(prompt_fidelity)
-        model_prompt = h["model_prompt_for_fidelity"](prompt, prompt_for_model, fidelity)
+        model_prompt = append_ratio_prompt_instruction(h["model_prompt_for_fidelity"](prompt, prompt_for_model, fidelity), ratio)
         prompt_constraints, guard_instructions = h["prompt_guard_context"](prompt, fidelity)
         auth_source = ctx.auth_settings.read_source() if not h["client_factory_overridden"] else "codex"
         effective_api_provider_id = h["request_api_provider_id"](auth_source, api_provider_id)
@@ -211,7 +212,7 @@ def register_generation_routes(app: FastAPI, ctx: WebUIContext) -> None:
         mask_data_url = _file_to_data_url(mask_files[0]) if mask_files else None
         compression = _normalize_compression(output_format, output_compression)
         fidelity = _normalize_prompt_fidelity(prompt_fidelity)
-        model_prompt = h["model_prompt_for_fidelity"](prompt, prompt_for_model, fidelity)
+        model_prompt = append_ratio_prompt_instruction(h["model_prompt_for_fidelity"](prompt, prompt_for_model, fidelity), ratio)
         prompt_constraints, guard_instructions = h["prompt_guard_context"](prompt, fidelity)
         effective_input_fidelity = input_fidelity if image_model_supports_input_fidelity(model) else None
         auth_source = ctx.auth_settings.read_source() if not h["client_factory_overridden"] else "codex"

@@ -10783,6 +10783,14 @@ ${galleryText}`;
   function currentPromptFidelity2() {
     return legacyMethod28("currentPromptFidelity");
   }
+  function currentCustomRatio() {
+    const width = String(els25.customRatioWidth?.value || "").trim();
+    const height = String(els25.customRatioHeight?.value || "").trim();
+    if (!/^[1-9]$/.test(width) || !/^[1-9]$/.test(height)) {
+      return "";
+    }
+    return `${width}:${height}`;
+  }
   function presetDimensions(resolution, ratio) {
     const defaultPreset = GPT_IMAGE_2_SIZE_PRESETS[DEFAULT_RESOLUTION];
     const preset = GPT_IMAGE_2_SIZE_PRESETS[resolution] || defaultPreset;
@@ -10862,6 +10870,10 @@ ${galleryText}`;
       params.ratio = presetMatch.ratio;
       params.orientation = presetMatch.orientation;
     } else {
+      const customRatio = currentCustomRatio();
+      if (customRatio) {
+        params.ratio = customRatio;
+      }
       const dimensions = String(params.size || "").split("x").map((value) => Number(value));
       if (dimensions.length === 2 && dimensions.every((value) => Number.isFinite(value) && value > 0)) {
         params.orientation = orientationForDimensions(dimensions[0], dimensions[1]);

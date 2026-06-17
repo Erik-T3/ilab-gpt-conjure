@@ -39,6 +39,7 @@ from .executor_transport import (
     _parse_optional_int,
     _prompt_for_transport,
 )
+from .prompt_ratio import append_ratio_prompt_instruction
 from .storage import GalleryStorage, ReferenceAssetStorage, TaskStorage
 from .task_metadata import (
     _append_output_record_state,
@@ -66,7 +67,7 @@ async def _execute_stored_task(
     params = dict(metadata.get("params") or {})
     mode = str(metadata["mode"])
     prompt = str(metadata["prompt"])
-    model_prompt = str(metadata.get("prompt_for_model") or prompt)
+    model_prompt = append_ratio_prompt_instruction(str(metadata.get("prompt_for_model") or prompt), params.get("ratio"))
     prompt_fidelity = _normalize_prompt_fidelity(params.get("prompt_fidelity") or "off")
     raw_constraints = metadata.get("prompt_constraints")
     prompt_constraints = [str(item) for item in raw_constraints] if isinstance(raw_constraints, list) else []

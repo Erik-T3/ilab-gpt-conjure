@@ -173,6 +173,49 @@ class WebUIQueueTests(unittest.TestCase):
         self.assertEqual(len(fake.generate_calls), 1)
         self.assertEqual(fake.generate_calls[0]["main_model"], "gpt-5.4")
         self.assertEqual(task["output_urls"], [output_url(task_id)])
+    def test_queue_worker_appends_ratio_instruction_for_older_queued_task_metadata(self) -> None:
+        from codex_image.webui.app import create_app
+
+        fake = FakeImageClient()
+        prompt = "生成一张横版电影海报"
+        expected_model_prompt = f"{prompt}\n\n将宽高比设为 16:9"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            auth_settings_path = root / "auth-settings.json"
+            auth_settings_path.write_text(json.dumps({"source": "codex"}), encoding="utf-8")
+            app = create_app(
+                output_root=root,
+                client_factory=lambda: fake,
+                auth_checker=lambda: True,
+                auth_settings_path=auth_settings_path,
+                batch_delay_seconds=0,
+                auto_start_queue=False,
+            )
+            client = TestClient(app)
+            created = client.post(
+                "/api/generate",
+                data={
+                    "prompt": prompt,
+                    "size": "1536x864",
+                    "ratio": "16:9",
+                    "quality": "low",
+                    "prompt_fidelity": "off",
+                },
+            )
+            task_id = created.json()["task"]["task_id"]
+            metadata_file = metadata_path(root, task_id)
+            metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+            metadata["prompt_for_model"] = prompt
+            metadata_file.write_text(json.dumps(metadata, ensure_ascii=False), encoding="utf-8")
+
+            asyncio.run(app.state.queue_manager.run_available_once())
+            task = client.get(f"/api/tasks/{task_id}").json()["task"]
+
+        self.assertEqual(created.status_code, 200)
+        self.assertEqual(task["status"], "completed")
+        self.assertEqual(len(fake.generate_calls), 1)
+        self.assertEqual(fake.generate_calls[0]["prompt"], expected_model_prompt)
+        self.assertEqual(task["prompt_for_model"], expected_model_prompt)
     def test_queue_worker_passes_prompt_guard_instructions_for_strict_tasks(self) -> None:
         from codex_image.webui.app import create_app
 

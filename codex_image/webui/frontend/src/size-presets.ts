@@ -103,6 +103,15 @@ function legacyMethod(name: string, ...args: any[]): any {
 
 function currentPromptFidelity(): string { return legacyMethod("currentPromptFidelity"); }
 
+function currentCustomRatio(): string {
+  const width = String(els.customRatioWidth?.value || "").trim();
+  const height = String(els.customRatioHeight?.value || "").trim();
+  if (!/^[1-9]$/.test(width) || !/^[1-9]$/.test(height)) {
+    return "";
+  }
+  return `${width}:${height}`;
+}
+
 export function presetDimensions(resolution: any, ratio: any): [number, number] {
   const defaultPreset = GPT_IMAGE_2_SIZE_PRESETS[DEFAULT_RESOLUTION] as Record<string, [number, number]>;
   const preset = GPT_IMAGE_2_SIZE_PRESETS[resolution] || defaultPreset;
@@ -197,6 +206,10 @@ export function currentTaskParams(): any {
     params.ratio = presetMatch.ratio;
     params.orientation = presetMatch.orientation;
   } else {
+    const customRatio = currentCustomRatio();
+    if (customRatio) {
+      params.ratio = customRatio;
+    }
     const dimensions = String(params.size || "").split("x").map((value) => Number(value));
     if (dimensions.length === 2 && dimensions.every((value) => Number.isFinite(value) && value > 0)) {
       params.orientation = orientationForDimensions(dimensions[0], dimensions[1]);

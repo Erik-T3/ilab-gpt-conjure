@@ -133,7 +133,7 @@ http://127.0.0.1:8787/
 ## Portable packages
 
 Download the current portable packages from [Downloads / Releases](RELEASES.md),
-or open [GitHub Release v0.4.0](https://github.com/kadevin/ilab-gpt-conjure/releases/tag/v0.4.0)
+or open [GitHub Release v0.4.1](https://github.com/kadevin/ilab-gpt-conjure/releases/tag/v0.4.1)
 directly.
 
 These packages are intended for users who want a ComfyUI-style unzip-and-run
@@ -194,6 +194,9 @@ be run manually with `ref` and `release_tag`.
 3. Write the prompt directly, insert gallery/color/snippet chips when useful,
    and choose the prompt mode: original, fidelity, or creative.
 4. Set image count, size, orientation, quality, output format, and compression.
+   Selected aspect ratios are also appended to the model prompt as an explicit
+   instruction, for example `将宽高比设为 16:9`, so Codex or API Responses proxies
+   that ignore size parameters can still receive the intended ratio.
 5. Start generation, track running and queued tasks in the left task list, then
    review, select, retry, download, or archive results from the preview area.
 

@@ -135,8 +135,8 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         script = self._frontend_script_source()
         styles = Path("codex_image/webui/static/styles.css").read_text(encoding="utf-8")
 
-        self.assertIn('/static/app.js?v=runtime-326', html)
-        self.assertIn('/static/styles.css?v=runtime-326', html)
+        self.assertIn('/static/app.js?v=runtime-327', html)
+        self.assertIn('/static/styles.css?v=runtime-327', html)
         self.assertIn('id="recentAssetDock"', html)
         self.assertRegex(html, r'class="image-input-footer"[\s\S]*id="recentAssetDock"[\s\S]*id="recentAssetList"')
         self.assertRegex(html, r'id="recentAssetDock"[\s\S]*id="quickGalleryDock"[\s\S]*id="galleryManagePanel"')
@@ -528,6 +528,8 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         self.assertIn("params.resolution = presetMatch.resolution", size_source)
         self.assertIn("params.ratio = presetMatch.ratio", size_source)
         self.assertIn("params.orientation = presetMatch.orientation", size_source)
+        self.assertIn("const customRatio = currentCustomRatio()", size_source)
+        self.assertIn("params.ratio = customRatio", size_source)
         self.assertIn('form.append("resolution", params.resolution)', task_submit_source)
         self.assertIn('form.append("ratio", params.ratio)', task_submit_source)
         self.assertIn('form.append("orientation", params.orientation)', task_submit_source)
@@ -2612,8 +2614,8 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         script = self._frontend_script_source()
         styles = Path("codex_image/webui/static/styles.css").read_text(encoding="utf-8")
 
-        self.assertIn('/static/app.js?v=runtime-326', html)
-        self.assertIn('/static/styles.css?v=runtime-326', html)
+        self.assertIn('/static/app.js?v=runtime-327', html)
+        self.assertIn('/static/styles.css?v=runtime-327', html)
         self.assertIn('id="pasteClipboardButton"', html)
         self.assertIn('id="statusText"', html)
         self.assertRegex(
@@ -2902,8 +2904,8 @@ class WebUIStaticLayoutTests(WebUIStaticTestCase):
         script = self._frontend_script_source()
         styles = Path("codex_image/webui/static/styles.css").read_text(encoding="utf-8")
 
-        self.assertIn("/static/app.js?v=runtime-326", html)
-        self.assertIn("/static/styles.css?v=runtime-326", html)
+        self.assertIn("/static/app.js?v=runtime-327", html)
+        self.assertIn("/static/styles.css?v=runtime-327", html)
         self.assertIn('const THEME_STORAGE_KEY = "codex-image-theme-preference";', script)
         self.assertIn('themePreference: "system"', script)
         self.assertIn('call(methods, "restoreThemePreference")', script)
