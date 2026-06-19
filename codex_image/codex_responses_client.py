@@ -271,11 +271,19 @@ class CodexImageClient:
                 usage = response["usage"]
             elif isinstance(image_usage, dict):
                 usage = image_usage
+            size = str(result.get("size", ""))
+            try:
+                from PIL import Image
+                import io
+                with Image.open(io.BytesIO(image_bytes)) as img:
+                    size = f"{img.width}x{img.height}"
+            except Exception:
+                pass
             return ImageResult(
                 image_bytes=image_bytes,
                 revised_prompt=str(result.get("revised_prompt", "")),
                 output_format=str(result.get("output_format", "")),
-                size=str(result.get("size", "")),
+                size=size,
                 background=str(result.get("background", "")),
                 quality=str(result.get("quality", "")),
                 usage=usage,

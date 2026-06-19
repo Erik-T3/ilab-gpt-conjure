@@ -406,12 +406,20 @@ class OpenAIImagesImageClient:
             if not isinstance(item, dict) or not (item.get("b64_json") or item.get("url")):
                 continue
             image_bytes = OpenAIImagesImageClient._image_bytes_from_response_item(item, url_fetcher=url_fetcher)
+            size = str(item.get("size") or response.get("size") or request_payload.get("size") or "")
+            try:
+                from PIL import Image
+                import io
+                with Image.open(io.BytesIO(image_bytes)) as img:
+                    size = f"{img.width}x{img.height}"
+            except Exception:
+                pass
             results.append(
                 ImageResult(
                     image_bytes=image_bytes,
                     revised_prompt=str(item.get("revised_prompt", "")),
                     output_format=str(item.get("output_format") or response.get("output_format") or request_payload.get("output_format") or ""),
-                    size=str(item.get("size") or response.get("size") or request_payload.get("size") or ""),
+                    size=size,
                     background=str(item.get("background") or response.get("background") or request_payload.get("background") or ""),
                     quality=str(item.get("quality") or response.get("quality") or request_payload.get("quality") or ""),
                     usage=response_usage,

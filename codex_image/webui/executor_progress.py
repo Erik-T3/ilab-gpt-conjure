@@ -55,6 +55,13 @@ def _restore_completed_output_progress(
 
         output_format = str(record.get("format") or path.suffix.lstrip(".") or params.get("output_format") or "png")
         size = str(record.get("size") or params.get("size") or "")
+        try:
+            from PIL import Image
+            import io
+            with Image.open(io.BytesIO(image_bytes)) as img:
+                size = f"{img.width}x{img.height}"
+        except Exception:
+            pass
         quality = str(record.get("quality") or params.get("quality") or "")
         background = str(record.get("background") or params.get("background") or "")
         usage = record.get("usage") if isinstance(record.get("usage"), dict) else {}
