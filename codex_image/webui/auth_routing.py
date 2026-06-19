@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from codex_image.auth import load_auth_state
 from codex_image.client import CodexImageClient, CodexImagesImageClient, OpenAIImagesImageClient, OpenAIResponsesImageClient
@@ -217,6 +220,10 @@ def _client_for_auth_source(source: str, *, api_settings: ApiSettings | None = N
     settings = (api_settings or ApiSettings(DEFAULT_WEBUI_API_SETTINGS_PATH)).read()
     mode = _normalize_codex_mode(codex_mode or settings.get("codex_mode"))
     client_class = CodexImageClient if mode == "responses" else CodexImagesImageClient
+    logger.warning(
+        "Creating Codex client — this reads and may refresh your "
+        "ChatGPT OAuth tokens stored at ~/.codex/auth.json."
+    )
     return client_class(load_auth_state())
 
 
@@ -273,7 +280,14 @@ def _codex_auth_available() -> bool:
         state = load_auth_state()
     except Exception:
         return False
-    return bool(state.access_token)
+    available = bool(state.access_token)
+    if available:
+        logger.warning(
+            "Codex auth: reading ChatGPT OAuth tokens from %s. "
+            "Switch to API mode in auth settings if this is unintended.",
+            state.path,
+        )
+    return available
 
 
 def _default_auth_source() -> str:

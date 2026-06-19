@@ -21,19 +21,13 @@ class StartupAuthTests(unittest.TestCase):
             raw={},
         )
 
-    def test_detect_startup_auth_source_uses_codex_when_oauth_token_exists(self) -> None:
+    def test_detect_startup_auth_source_always_defaults_to_api(self) -> None:
+        """After the security fix, detect_startup_auth_source always returns
+        'api' so that ~/.codex/auth.json is never silently accessed."""
         from codex_image.webui.startup_auth import detect_startup_auth_source
 
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            with patch("codex_image.webui.startup_auth.load_auth_state", return_value=self._auth_state(root, "token")):
-                self.assertEqual(detect_startup_auth_source(), "codex")
-
-    def test_detect_startup_auth_source_uses_api_without_codex_oauth_token(self) -> None:
-        from codex_image.webui.startup_auth import detect_startup_auth_source
-
-        with patch("codex_image.webui.startup_auth.load_auth_state", side_effect=FileNotFoundError("missing")):
-            self.assertEqual(detect_startup_auth_source(), "api")
+        # No patching needed — the function no longer calls load_auth_state.
+        self.assertEqual(detect_startup_auth_source(), "api")
 
     def test_initialize_auth_settings_preserves_user_selected_sources(self) -> None:
         from codex_image.webui.startup_auth import initialize_auth_settings

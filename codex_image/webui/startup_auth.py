@@ -5,18 +5,17 @@ import json
 from pathlib import Path
 from typing import Any
 
-from codex_image.auth import load_auth_state
+
 
 AUTH_SOURCES = {"codex", "api"}
 LEGACY_AUTH_SOURCES = {"auto", "cock" + "pit"}
 
 
 def detect_startup_auth_source() -> str:
-    try:
-        state = load_auth_state()
-    except Exception:
-        return "api"
-    return "codex" if getattr(state, "access_token", "") else "api"
+    # Default to "api" mode to avoid silently reading ~/.codex/auth.json
+    # (ChatGPT OAuth tokens).  Users who want codex mode must explicitly
+    # select it via the WebUI auth settings panel.
+    return "api"
 
 
 def _read_existing_source(path: Path) -> str:

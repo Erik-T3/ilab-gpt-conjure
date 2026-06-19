@@ -238,7 +238,36 @@ def create_app(
     check_auth = auth_checker or (lambda: bool(_auth_status(auth_settings.read_source(), api_settings=api_settings)["auth_available"]))
 
     app = FastAPI(title="iLab GPT CONJURE", lifespan=queue_lifespan)
+
+    @app.middleware("http")
+    async def csrf_protection_middleware(request: Request, call_next):
+        if request.method in {"POST", "PATCH", "DELETE"}:
+            if request.headers.get("x-requested-with") != "codex-image-webui":
+                host = request.headers.get("host") or request.url.netloc
+                origin = request.headers.get("origin")
+                referer = request.headers.get("referer")
+
+                if origin:
+                    origin_host = origin.split("://", 1)[-1]
+                    if origin_host != host:
+                        from fastapi.responses import JSONResponse
+                        return JSONResponse(
+                            status_code=403,
+                            content={"detail": "CSRF protection: Origin mismatch"}
+                        )
+                elif referer:
+                    from urllib.parse import urlsplit
+                    referer_host = urlsplit(referer).netloc
+                    if referer_host != host:
+                        from fastapi.responses import JSONResponse
+                        return JSONResponse(
+                            status_code=403,
+                            content={"detail": "CSRF protection: Referer mismatch"}
+                        )
+        return await call_next(request)
+
     ctx = WebUIContext(
+
         app=app,
         storage=storage,
         gallery_storage=gallery_storage,

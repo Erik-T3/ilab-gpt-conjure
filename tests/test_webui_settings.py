@@ -123,8 +123,11 @@ class WebUISettingsTests(unittest.TestCase):
         self.assertEqual(payload["current_version"], "0.3.6")
         self.assertEqual(payload["latest_version"], "0.3.7")
         self.assertTrue(payload["update_available"])
+        import platform
         self.assertTrue(payload["updater_available"])
-        self.assertEqual(payload["updater_label"], "Update WebUI Portable.command")
+        expected_label = "Update WebUI Portable.bat" if platform.system().lower() == "windows" else "Update WebUI Portable.command"
+        self.assertEqual(payload["updater_label"], expected_label)
+
 
     def test_auth_routes_report_and_persist_codex_or_api_source(self) -> None:
         from codex_image.auth import AuthState
@@ -217,14 +220,17 @@ class WebUISettingsTests(unittest.TestCase):
                 last_refresh=None,
                 raw={},
             )
-            with patch("codex_image.webui.startup_auth.load_auth_state", return_value=auth_state), patch(
+            # Only patch auth_routing.load_auth_state (startup_auth no longer imports it).
+            # detect_startup_auth_source now always returns "api", so legacy sources
+            # fall back to "api" rather than auto-detecting codex.
+            with patch(
                 "codex_image.webui.auth_routing.load_auth_state", return_value=auth_state
             ):
                 app = create_app(output_root=root / "tasks", auth_settings_path=settings_path, auto_start_queue=False)
                 response = TestClient(app).get("/api/auth")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["selected_source"], "codex")
+        self.assertEqual(response.json()["selected_source"], "api")
     def test_api_settings_routes_persist_secret_without_echoing_it(self) -> None:
         from codex_image.webui.app import create_app
 
@@ -270,7 +276,9 @@ class WebUISettingsTests(unittest.TestCase):
         self.assertEqual(reported.json()["settings"]["api_mode"], "responses")
         self.assertTrue(reported.json()["settings"]["api_key_set"])
         self.assertEqual(persisted["codex_mode"], "images")
-        self.assertEqual(persisted["api_key"], "test-api-key-test-secret")
+        self.assertTrue(persisted["api_key"].startswith("enc:"), "API key on disk must be encrypted")
+        from codex_image.webui.key_protection import unprotect_key
+        self.assertEqual(unprotect_key(persisted["api_key"]), "test-api-key-test-secret")
         self.assertEqual(persisted["api_mode"], "responses")
         self.assertNotIn("test-api-key-test-secret", response_text)
     def test_api_settings_persist_codex_channel_mode(self) -> None:
@@ -370,8 +378,11 @@ class WebUISettingsTests(unittest.TestCase):
         self.assertEqual(reported["providers"][0]["images_concurrency"], 4)
         self.assertEqual(reported["providers"][1]["images_concurrency"], 2)
         self.assertEqual(persisted["active_provider_id"], "vendor-b")
-        self.assertEqual(persisted["providers"][0]["api_key"], "test-api-key-legacy-secret")
-        self.assertEqual(persisted["providers"][1]["api_key"], "test-api-key-vendor-b-secret")
+        from codex_image.webui.key_protection import unprotect_key
+        self.assertTrue(persisted["providers"][0]["api_key"].startswith("enc:"), "Provider 0 key must be encrypted")
+        self.assertTrue(persisted["providers"][1]["api_key"].startswith("enc:"), "Provider 1 key must be encrypted")
+        self.assertEqual(unprotect_key(persisted["providers"][0]["api_key"]), "test-api-key-legacy-secret")
+        self.assertEqual(unprotect_key(persisted["providers"][1]["api_key"]), "test-api-key-vendor-b-secret")
         self.assertEqual(persisted["providers"][0]["images_concurrency"], 4)
         self.assertEqual(persisted["providers"][1]["images_concurrency"], 2)
         self.assertNotIn("test-api-key-legacy-secret", response_text)

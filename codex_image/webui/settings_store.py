@@ -7,6 +7,7 @@ from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 from codex_image.client import DEFAULT_IMAGE_MODEL, DEFAULT_OPENAI_API_BASE_URL
+from .key_protection import protect_key, unprotect_key
 
 from .color_settings import (
     DEFAULT_COLOR_FAVORITES,
@@ -356,15 +357,21 @@ class ApiSettings:
     @classmethod
     def _persisted_settings(cls, providers: list[dict[str, Any]], active_provider_id: str, *, codex_mode: str) -> dict[str, Any]:
         settings = cls._settings_from_providers(providers, active_provider_id, codex_mode=codex_mode)
+        # Encrypt API keys before writing to disk
+        persisted_providers = []
+        for provider in settings["providers"]:
+            persisted_provider = dict(provider)
+            persisted_provider["api_key"] = protect_key(str(provider.get("api_key") or ""))
+            persisted_providers.append(persisted_provider)
         return {
             "active_provider_id": settings["active_provider_id"],
             "codex_mode": settings["codex_mode"],
             "base_url": settings["base_url"],
-            "api_key": settings["api_key"],
+            "api_key": protect_key(str(settings.get("api_key") or "")),
             "image_model": settings["image_model"],
             "api_mode": settings["api_mode"],
             "images_concurrency": settings["images_concurrency"],
-            "providers": settings["providers"],
+            "providers": persisted_providers,
         }
 
     @classmethod
@@ -393,11 +400,13 @@ class ApiSettings:
         existing = existing or {}
         provider_id = cls._normalize_provider_id(payload.get("id") or fallback_id)
         name = str(payload.get("name") or existing.get("name") or fallback_name or provider_id).strip() or provider_id
+        raw_key = str(payload.get("api_key", existing.get("api_key", "")) or "").strip()
+        decrypted_key = unprotect_key(raw_key)
         return {
             "id": provider_id,
             "name": name,
             "base_url": cls._normalize_base_url(payload.get("base_url", existing.get("base_url", DEFAULT_OPENAI_API_BASE_URL))),
-            "api_key": str(payload.get("api_key", existing.get("api_key", "")) or "").strip(),
+            "api_key": decrypted_key,
             "image_model": cls._normalize_image_model(payload.get("image_model", existing.get("image_model", DEFAULT_IMAGE_MODEL))),
             "api_mode": cls._normalize_persisted_api_mode(
                 payload.get("api_mode", existing.get("api_mode", cls._PERSISTED_API_MODE_DEFAULT))
