@@ -22,12 +22,62 @@ class StartupAuthTests(unittest.TestCase):
         )
 
     def test_detect_startup_auth_source_always_defaults_to_api(self) -> None:
-        """After the security fix, detect_startup_auth_source always returns
-        'api' so that ~/.codex/auth.json is never silently accessed."""
+        """By default, detect_startup_auth_source returns 'api' so that
+        ~/.codex/auth.json is not silently accessed."""
         from codex_image.webui.startup_auth import detect_startup_auth_source
 
-        # No patching needed — the function no longer calls load_auth_state.
-        self.assertEqual(detect_startup_auth_source(), "api")
+        with patch("codex_image.auth.load_auth_state", return_value=self._auth_state(Path("."), "token")):
+            self.assertEqual(detect_startup_auth_source(), "api")
+            self.assertEqual(detect_startup_auth_source(enable_codex_auth=False), "api")
+
+    def test_detect_startup_auth_source_with_flag(self) -> None:
+        from codex_image.webui.startup_auth import detect_startup_auth_source
+
+        # If enabled, but no token, fallback to api
+        with patch("codex_image.auth.load_auth_state", return_value=self._auth_state(Path("."), None)):
+            self.assertEqual(detect_startup_auth_source(enable_codex_auth=True), "api")
+
+        # If enabled and token exists, return codex
+        with patch("codex_image.auth.load_auth_state", return_value=self._auth_state(Path("."), "token")):
+            self.assertEqual(detect_startup_auth_source(enable_codex_auth=True), "codex")
+
+        # If loading state raises exception, fallback to api
+        with patch("codex_image.auth.load_auth_state", side_effect=RuntimeError("missing")):
+            self.assertEqual(detect_startup_auth_source(enable_codex_auth=True), "api")
+
+    def test_detect_startup_auth_source_with_env_var(self) -> None:
+        from codex_image.webui.startup_auth import detect_startup_auth_source
+
+        # Set env var
+        with patch.dict("os.environ", {"ILAB_ENABLE_CODEX_AUTH": "1"}):
+            with patch("codex_image.auth.load_auth_state", return_value=self._auth_state(Path("."), "token")):
+                self.assertEqual(detect_startup_auth_source(), "codex")
+
+        # Env var set but no token
+        with patch.dict("os.environ", {"ILAB_ENABLE_CODEX_AUTH": "1"}):
+            with patch("codex_image.auth.load_auth_state", return_value=self._auth_state(Path("."), None)):
+                self.assertEqual(detect_startup_auth_source(), "api")
+
+        # Env var set to 0 or other value
+        with patch.dict("os.environ", {"ILAB_ENABLE_CODEX_AUTH": "0"}):
+            with patch("codex_image.auth.load_auth_state", return_value=self._auth_state(Path("."), "token")):
+                self.assertEqual(detect_startup_auth_source(), "api")
+
+    def test_main_cli_with_enable_codex_auth_flag(self) -> None:
+        from codex_image.webui.startup_auth import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            settings_path = Path(tmp) / "webui-auth-settings.json"
+
+            # Run without flag -> should write api source
+            with patch("codex_image.auth.load_auth_state", return_value=self._auth_state(Path("."), "token")):
+                main(["--settings-path", str(settings_path)])
+                self.assertEqual(json.loads(settings_path.read_text(encoding="utf-8"))["source"], "api")
+
+            # Run with flag -> should write codex source because we mock token presence
+            with patch("codex_image.auth.load_auth_state", return_value=self._auth_state(Path("."), "token")):
+                main(["--settings-path", str(settings_path), "--force", "--enable-codex-auth"])
+                self.assertEqual(json.loads(settings_path.read_text(encoding="utf-8"))["source"], "codex")
 
     def test_initialize_auth_settings_preserves_user_selected_sources(self) -> None:
         from codex_image.webui.startup_auth import initialize_auth_settings
