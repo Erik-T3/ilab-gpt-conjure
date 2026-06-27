@@ -1,33 +1,31 @@
 # 下载 / Releases
 
-当前正式版本：[v0.5.0](https://github.com/kadevin/ilab-gpt-conjure/releases/tag/v0.5.0)
+当前正式版本：[v0.5.2](https://github.com/kadevin/ilab-gpt-conjure/releases/tag/v0.5.2)
 
 ## 版本说明
 
-当前版本：`v0.5.0`。这个版本提供 Windows x64、macOS Apple Silicon、macOS Intel 三种免安装一键包；下载对应平台的 zip 后解压即可启动本地 WebUI，并可在包内一键更新到后续版本。
+当前版本：`v0.5.2`。这个版本提供 Windows x64、macOS Apple Silicon、macOS Intel 三种免安装一键包；下载对应平台的 zip 后解压即可启动本地 WebUI，并可手动运行包内更新脚本升级到后续版本。
 
-本版重点：这一版把 Codex 默认生图通道从 Responses 切到直连 Image 通道，生成走 `codex/images/generations`，编辑走 `codex/images/edits`，用于恢复 2K / 4K 和高质量输出；Responses 通道仍保留为兼容选项。
+本版重点：这一版主要发布多语言界面和输入图像画布编辑能力。WebUI 增加语言设置下拉菜单和多语言字典，输入图片编辑器升级为可插入多张输入图、调整画布范围、缩放旋转和局部擦除的多图层编辑器；同时修复任务状态同步和公用图库窄卡片操作区溢出问题。
 
 本版详情：
 
-- Codex Image 直连：新增 Codex 专用 Images 客户端，使用本机 Codex OAuth 登录态请求 `https://chatgpt.com/backend-api/codex/images/generations` 和 `https://chatgpt.com/backend-api/codex/images/edits`；生成和编辑请求都使用 JSON payload，支持 `gpt-image-2`、自定义尺寸、质量、输出格式和参考图。
-- Codex 通道切换：右上角 API 设置面板顶部新增“Codex 通道”切换，可在 `Image` 和 `Responses` 之间切换；默认使用 `Image`，设置会持久化，复用历史任务时也会恢复对应通道。
-- 高分辨率输出：Codex `Image` 模式用于 2K / 4K 和高质量生成、编辑任务；Codex `Responses` 模式仍保留为兼容通道，但高分辨率任务建议使用默认的 `Image` 模式。
-- 队列与历史兼容：新任务会记录 `codex_mode`、`requested_backend` 和实际 `backend`；队列 worker、重试失败槽位、任务复用和请求预览都会按任务记录选择 `codex_images` 或 `codex_responses`，避免历史任务和等待中任务跑错通道。
-- 提示词保真规则：Codex `Image` 模式和 API Images 模式使用同一套直接 Images 传输规则；严格保真提示会合并进 prompt，不再把额外 instructions 作为 Responses 字段发送。
-- 并发执行：Codex `Image` 模式纳入直接 Images 并发执行路径，多图任务可以像 API Images 一样按槽位并发请求，减少多张图等待时间；Responses 模式继续走原有单请求工具调用流程。
-- 联网搜索边界：联网搜索仍只在 Responses 通道生效；使用 Codex 默认 `Image` 模式时，生成重点放在尺寸、质量和编辑参数的稳定传递上。
-- 网络层优化：实时事件连接成功后，启动流程不再额外全量刷新 `/api/tasks/recent`；只有 `EventSource` 不可用时才走完整任务列表兜底，减少大历史库启动时的重复网络请求和列表重算。
-- 静态资源与前端合同：前端资源版本提升到 `runtime-329`；静态测试锁定 Codex 通道切换、请求预览、表单提交、队列后端选择和实时事件兜底路径，降低后续改动回归风险。
-- 一键包与文档：版本提升到 0.5.0，公开 README 和 RELEASES 将同步更新 Codex Image 默认通道、Responses 兼容说明和三平台一键包下载信息；Release 页面继续带完整 `当前版本`、`本版重点`、`本版详情`、三平台一键包和 macOS 未签名说明。
+- 多语言界面：语言设置改为下拉菜单，第一次启动会按浏览器语言自动选择，手动选择后即时生效并记住偏好；已加入简体中文、正體中文、繁体中文、日本語、한국어、English、Español、Português、Français、Deutsch、Русский、Italiano 和 हिन्दी。
+- 语言入口可找回：语言设置放在独立 Tab，Tab 标题保留当前语言文案和 English 提示，避免用户切错语言后找不到入口；右上角中英文切换按钮已移除。
+- 输入图像画布编辑：编辑输入图片时可插入输入框里的其他一张或多张图片，进行多图组合、选择移动、缩放旋转、局部擦除和图层排序，编辑后保存为一张输入图。
+- 画布范围控制：新增“首图范围 / 适应图层”画布范围选择；既可以保持第一张输入图的尺寸，也可以按全部图层自动扩展画布，适合把多张参考图拼成一张更大的编辑输入图。
+- 图层和变换体验：图层列表显示真实缩略图；图片变换默认锁定长宽比例，按住 Shift 才自由变换；箭头和擦除等工具改进实时反馈，减少绘制延迟感和错位感。
+- 公用图库溢出修复：合入 PR #3 的窄宽度卡片修复，图库卡片、标题、说明和操作按钮都允许收缩并使用省略显示，极窄容器下操作按钮自动变为单列，避免抽屉变窄时按钮挤出卡片。
+- 任务状态同步：修复已生成结果但左侧任务列表仍显示“生成中”的状态不同步问题，任务状态、输出槽位和历史详情以真实可显示结果为准更新。
+- 前端依赖与测试：图层编辑器使用 Konva，`package-lock.json` 锁定对应 npm 依赖；前端资源版本提升到 `runtime-368`，静态测试覆盖多语言字典、语言下拉菜单、输入图像画布范围、图层缩略图、图库卡片窄宽度按钮溢出和任务状态同步，降低后续回归风险。
 
 ## 免安装一键包
 
 | 平台 | 适用设备 | 下载 | SHA256 |
 | --- | --- | --- | --- |
-| Windows x64 | Windows 10/11 x64 | [ilab-gpt-conjure_windows_portable_x64_0.5.0.zip](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.0/ilab-gpt-conjure_windows_portable_x64_0.5.0.zip) | [sha256](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.0/ilab-gpt-conjure_windows_portable_x64_0.5.0.zip.sha256.txt) |
-| macOS Apple Silicon | M1/M2/M3/M4 | [ilab-gpt-conjure_macos_portable_arm64_0.5.0.zip](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.0/ilab-gpt-conjure_macos_portable_arm64_0.5.0.zip) | [sha256](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.0/ilab-gpt-conjure_macos_portable_arm64_0.5.0.zip.sha256.txt) |
-| macOS Intel | Intel x64 | [ilab-gpt-conjure_macos_portable_x64_0.5.0.zip](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.0/ilab-gpt-conjure_macos_portable_x64_0.5.0.zip) | [sha256](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.0/ilab-gpt-conjure_macos_portable_x64_0.5.0.zip.sha256.txt) |
+| Windows x64 | Windows 10/11 x64 | [ilab-gpt-conjure_windows_portable_x64_0.5.2.zip](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.2/ilab-gpt-conjure_windows_portable_x64_0.5.2.zip) | [sha256](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.2/ilab-gpt-conjure_windows_portable_x64_0.5.2.zip.sha256.txt) |
+| macOS Apple Silicon | M1/M2/M3/M4 | [ilab-gpt-conjure_macos_portable_arm64_0.5.2.zip](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.2/ilab-gpt-conjure_macos_portable_arm64_0.5.2.zip) | [sha256](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.2/ilab-gpt-conjure_macos_portable_arm64_0.5.2.zip.sha256.txt) |
+| macOS Intel | Intel x64 | [ilab-gpt-conjure_macos_portable_x64_0.5.2.zip](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.2/ilab-gpt-conjure_macos_portable_x64_0.5.2.zip) | [sha256](https://github.com/kadevin/ilab-gpt-conjure/releases/download/v0.5.2/ilab-gpt-conjure_macos_portable_x64_0.5.2.zip.sha256.txt) |
 
 使用方式：
 
@@ -37,11 +35,10 @@
    `Start WebUI Portable.command`。
 4. 如果浏览器没有自动打开，访问 `http://127.0.0.1:8787/`。
 
-启动脚本会短暂检测最新 GitHub Release；发现新版本时会在 WebUI 左下角版本入口显示提醒，不会自动更新。
 更新已经解压的一键包时，先关闭 WebUI 服务窗口，然后运行 Windows 的
 `Update WebUI Portable.bat` 或 macOS 的 `Update WebUI Portable.command`。
-更新脚本会下载当前平台对应的最新 GitHub Release 资产，校验 SHA256，保留本地 `data/`，并把被替换文件备份到 `.backup/`。如果不希望启动时检查版本，可在启动前设置
-`ILAB_SKIP_VERSION_CHECK=1`。
+启动脚本不会访问 GitHub，也不会自动更新文件。更新脚本会下载当前平台对应的最新
+GitHub Release 资产，执行前显示所选资产和 SHA256 文件，校验 SHA256，只替换一键包目录内由程序管理的文件，保留本地 `data/`，并把被替换文件备份到 `.backup/`。
 
 macOS 包是未签名的 portable zip，不是已签名 `.app` 或 notarized DMG。
 启动脚本会尝试在启动前移除当前解压目录内的 quarantine 标记。如果 macOS

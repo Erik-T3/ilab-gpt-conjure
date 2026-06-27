@@ -321,6 +321,10 @@ class ApiSettings:
                 continue
             provider_id = self._normalize_provider_id(raw_provider.get("id") or f"provider-{index}")
             existing = current_by_id.get(provider_id)
+            api_key_source = None
+            if "api_key" not in raw_provider and raw_provider.get("api_key_source_provider_id"):
+                source_id = self._normalize_provider_id(raw_provider.get("api_key_source_provider_id"))
+                api_key_source = current_by_id.get(source_id)
             if existing is None and "api_key" not in raw_provider and index == 1 and len(current["providers"]) == 1:
                 existing = current["providers"][0]
             providers.append(
@@ -329,6 +333,7 @@ class ApiSettings:
                     fallback_id=provider_id,
                     fallback_name=f"Provider {index}",
                     existing=existing,
+                    api_key_source=api_key_source,
                 )
             )
         if not providers:
@@ -396,11 +401,13 @@ class ApiSettings:
         fallback_id: str,
         fallback_name: str,
         existing: dict[str, Any] | None = None,
+        api_key_source: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         existing = existing or {}
+        api_key_source = api_key_source or {}
         provider_id = cls._normalize_provider_id(payload.get("id") or fallback_id)
         name = str(payload.get("name") or existing.get("name") or fallback_name or provider_id).strip() or provider_id
-        raw_key = str(payload.get("api_key", existing.get("api_key", "")) or "").strip()
+        raw_key = str(payload.get("api_key", existing.get("api_key", api_key_source.get("api_key", ""))) or "").strip()
         decrypted_key = unprotect_key(raw_key)
         return {
             "id": provider_id,
