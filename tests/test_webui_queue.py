@@ -155,6 +155,7 @@ class WebUIQueueTests(unittest.TestCase):
                 client_factory=lambda: fake,
                 auth_checker=lambda: True,
                 auth_settings_path=auth_settings_path,
+                api_settings_path=Path(tmp) / "api-settings.json",
                 batch_delay_seconds=0,
                 auto_start_queue=False,
             )
@@ -830,7 +831,8 @@ class WebUIQueueTests(unittest.TestCase):
         self.assertEqual(first_task["generated_count"], 3)
         self.assertEqual(first_task["failed_count"], 1)
         self.assertEqual(first_task["total_count"], 4)
-        self.assertIn("Image request timed out after 0.12s", first_task["last_error"])
+        self.assertIn("Image request timed out after", first_task["last_error"])
+        self.assertIn("(timeout limit 0.12s)", first_task["last_error"])
         self.assertEqual(
             [(item["index"], item["status"]) for item in first_task["outputs"]],
             [(1, "completed"), (2, "completed"), (3, "completed"), (4, "failed")],

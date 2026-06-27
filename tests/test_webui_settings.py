@@ -454,9 +454,11 @@ class WebUISettingsTests(unittest.TestCase):
         self.assertEqual(reported["providers"][1]["image_model"], "vendor-a-alt-model")
         self.assertTrue(reported["providers"][0]["api_key_set"])
         self.assertTrue(reported["providers"][1]["api_key_set"])
-        self.assertNotIn("api_key_source_provider_id", reported["providers"][1])
-        self.assertEqual(persisted["providers"][0]["api_key"], "test-api-key-copy-secret")
-        self.assertEqual(persisted["providers"][1]["api_key"], "test-api-key-copy-secret")
+        from codex_image.webui.key_protection import unprotect_key
+        self.assertTrue(persisted["providers"][0]["api_key"].startswith("enc:"), "Provider 0 key must be encrypted")
+        self.assertTrue(persisted["providers"][1]["api_key"].startswith("enc:"), "Provider 1 key must be encrypted")
+        self.assertEqual(unprotect_key(persisted["providers"][0]["api_key"]), "test-api-key-copy-secret")
+        self.assertEqual(unprotect_key(persisted["providers"][1]["api_key"]), "test-api-key-copy-secret")
         self.assertNotIn("api_key_source_provider_id", persisted["providers"][1])
         self.assertNotIn("test-api-key-copy-secret", response_text)
 
